@@ -1,0 +1,48 @@
+name: Preprocessing Pipeline – Wine Quality
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "preprocessing/**"
+      - "winequality_raw.csv"
+  workflow_dispatch:
+
+jobs:
+  preprocess:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.7"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pandas==2.2.3 numpy==1.26.4 scikit-learn==1.5.2
+
+      - name: Run preprocessing script
+        working-directory: preprocessing
+        run: python automate_Muhammad-Zaenal-Arifin.py
+
+      - name: Upload preprocessed dataset
+        uses: actions/upload-artifact@v4
+        with:
+          name: winequality-preprocessed-${{ github.run_number }}
+          path: preprocessing/winequality_preprocessing/
+          retention-days: 30
+
+      - name: Commit preprocessed data back to repo
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name  "GitHub Actions"
+          git add preprocessing/winequality_preprocessing/ || true
+          git add preprocessing/winequality_raw.csv        || true
+          git diff --staged --quiet || git commit -m \
+            "chore: auto-update preprocessed dataset [run #${{ github.run_number }}]"
+          git push || echo "Nothing to push"
